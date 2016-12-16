@@ -156,11 +156,13 @@ func main() {
 }
 
 func littleSync(dstdb datas.Database, dstds datas.Dataset) datas.Dataset {
-	srcdb, srcds, err := spec.GetDataset(os.Args[1])
+	src_spec, err := spec.ForDataset(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
+	srcdb := src_spec.GetDatabase()
 	defer srcdb.Close()
+	srcds := src_spec.GetDataset()
 
 	head := srcds.HeadValue().(types.Struct)
 	allItems := head.Get("items").(types.Map)
