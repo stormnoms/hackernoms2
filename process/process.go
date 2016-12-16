@@ -15,7 +15,6 @@ import (
 	"github.com/attic-labs/noms/go/datas"
 	"github.com/attic-labs/noms/go/spec"
 	"github.com/attic-labs/noms/go/types"
-	"github.com/garyburd/redigo/redis"
 )
 
 // Turn the items into threads:
@@ -85,22 +84,24 @@ func main() {
 		return
 	}
 
-	// Just make sure that the source is valid
-	srcdb, _, err := spec.GetDataset(os.Args[1])
+	src_spec, err := spec.ForDataset(os.Args[1])
 	if err != nil {
-		fmt.Printf("invalid source dataset: %s\n", os.Args[1])
-		fmt.Printf("%s\n", err)
+		fmt.Printf("Could not parse src dataset: %s\n", err)
 		return
 	}
-	srcdb.Close()
 
-	dstdb, dstds, err := spec.GetDataset(os.Args[2])
+	srcdb := src_spec.GetDatabase()
+	defer srcdb.Close()
+
+	dst_spec, err := spec.ForDataset(os.Args[2])
 	if err != nil {
-		fmt.Printf("invalid destination dataset: %s\n", os.Args[2])
-		fmt.Printf("%s\n", err)
+		fmt.Printf("Could not parse dst dataset: %s\n", err)
 		return
 	}
+
+	dstdb := dst_spec.GetDatabase()
 	defer dstdb.Close()
+	dstds := dst_spec.GetDataset()
 
 	// Create our types.
 	optionString := types.MakeUnionType(types.StringType, nothingType)
@@ -392,34 +393,4 @@ func workerPool(count int, work func(), done func()) {
 		close(workerDone)
 		done()
 	}()
-}
-
-type RedisConfig struct {
-	Hostname string
-	Port     string
-}
-
-func (c *RedisConfig) Connect_string() string {
-	connect := fmt.Sprint(c.Hostname, ":", c.Port)
-	return connect
-}
-
-func NewRedisConfig() *RedisConfig {
-	cfg := &RedisConfig{
-		Hostname: "localhost",
-		Port:     "6379",
-	}
-	return cfg
-}
-
-func getRedisConn() (c redis.Conn) {
-
-	cfg := NewRedisConfig()
-	connect_string := cfg.Connect_string()
-	c, err := redis.Dial("tcp", connect_string)
-	if err != nil {
-		panic(err)
-	}
-	return c
-	// defer c.Close()
 }
