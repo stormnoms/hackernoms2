@@ -42,13 +42,14 @@ func main() {
 		flag.Usage()
 		return
 	}
-
-	db, ds, err := spec.GetDataset(flag.Arg(0))
+	spec, err := spec.ForDataset(flag.Arg(0))
 	if err != nil {
 		fmt.Printf("Could not parse destination dataset: %s\n", err)
 		return
 	}
+	db := spec.GetDatabase()
 	defer db.Close()
+	ds := spec.GetDataset()
 
 	hv, ok := ds.MaybeHeadValue()
 
